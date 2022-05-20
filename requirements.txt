@@ -1,0 +1,14 @@
+pandas==1.4.2
+Keras==2.4.3
+keras-nightly
+Keras-Preprocessing==1.1.2
+numpy==1.19.5
+PyYAML==5.4.1
+scipy==1.6.3
+scikit-learn==1.1.0
+tensorflow==2.5.3
+opencv-python
+tqdm==4.64.0
+matplotlib==3.5.2
+pyarrow==8.0.0
+Pillow==9.1.0
