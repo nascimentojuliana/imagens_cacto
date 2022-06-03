@@ -38,12 +38,12 @@ class DataGenerator(tf.keras.utils.Sequence):
         if self.method == 'RGB_NDVI':
             imagem_original = Image.open(im).convert('RGB').resize((self.dimension, self.dimension), Image.ANTIALIAS)
             imagem = image.img_to_array(imagem_original)
+            imagem_ndvi = self.pre_processing.transform(im)
+            imagem = np.concatenate((imagem, imagem_ndvi), axis=2)
             imagem = np.expand_dims(imagem, axis=0)
             imagem = imagenet_utils.preprocess_input(imagem, mode='tf')[0]
-            imagem_ndvi = preprocess_ndvi(imagem_original)
-            result = np.concatenate((imagem, imagem_ndvi), axis=2)
 
-        return result
+        return imagem
 
     def __len__(self): # compute number of batches to yield 
         return int(math.ceil(len(self.df) / float(self.bsz))) 

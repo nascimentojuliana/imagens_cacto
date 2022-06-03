@@ -5,7 +5,7 @@ setup(
     packages=find_packages(include=['image_satelite','image_satelite.*']),
     version='0.1',
     description='',
-    author='Your name (or your organization/company/team)',
+    author='',
     url="",
     license='Unlicensed'
 )

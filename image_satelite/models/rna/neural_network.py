@@ -9,11 +9,11 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 
 from image_satelite.models.DataGenerator import DataGenerator
-from image_satelite.models.DataGenerator_predict import DataGeneratorPredict
 
 from sklearn.metrics import f1_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_auc_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import confusion_matrix
@@ -38,7 +38,8 @@ class RNA():
 		print('###########################{}##########################'.format(method))
 
 		# create the base pre-trained models
-		base_model = Xception(weights='imagenet', include_top=False)
+		#model_base = Xception(weights='imagenet', include_top=False)
+		model_base = load_model(model_base)
 
 		checkpoint_filepath = 'model.h5'
 
@@ -52,7 +53,7 @@ class RNA():
 		csv_logger = CSVLogger('logs.csv', append=True, separator=';')
 
 		# add a global spatial average pooling layer
-		x = base_model.output
+		x = model_base.output
 		x = GlobalAveragePooling2D()(x)
 		# let's add a fully-connected layer
 		x = Dense(1024, activation='relu')(x)
@@ -60,7 +61,7 @@ class RNA():
 		outputs = Dense(2, activation='softmax')(x)
 
 		# this is the model we will train
-		model = Model(inputs=base_model.input, outputs=outputs)
+		model = Model(inputs=model_base.input, outputs=outputs)
 
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
@@ -75,7 +76,7 @@ class RNA():
 		return model
 
 	def predict(self, df, batch_size, method):
-		data = DataGeneratorPredict(df=df, batch_size=batch_size, method=method, dimension=self.dimension, shuffle=False) 
+		data = DataGenerator(df=df, batch_size=batch_size, method=method, dimension=self.dimension, shuffle=False) 
 		predictions = self.model.predict(data) 
 
 		scores = pd.DataFrame(predictions, columns = ['normal', 'alterada'])
@@ -87,7 +88,7 @@ class RNA():
 
 		submission_results.insert(0, 'label', df['label'])
 
-		return submission_results
+		return submission_results, scores_y
 
 	def seleciona_classe_threshold(self, df):
 		df.columns = ['normal',  'alterada']
@@ -104,7 +105,7 @@ class RNA():
 
 	def evaluate(self, df, batch_size, method):
 
-		submission_results = self.predict(df, batch_size, method) 
+		submission_results, scores_y = self.predict(df, batch_size, method)
 
 		submission_results.insert(1, 'real', df['label'])
 
@@ -112,17 +113,19 @@ class RNA():
 		
 		Y = label_binarize(submission_results['real'], classes=[0, 1])
 
-		n_classes = Y.shape[1]
+		auc = roc_auc_score(Y, scores_y)
 
-		fpr = dict()
-		tpr = dict()
-		roc_auc = dict()
-		for i in range(n_classes):
-			fpr[i], tpr[i], _ = roc_curve(Y[:, i], scores_y[:, i])
-			roc_auc[i] = auc(fpr[i], tpr[i])
+		# n_classes = Y.shape[1]
 
-		fpr["micro"], tpr["micro"], _ = roc_curve(Y.ravel(), scores_y.ravel())
-		roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+		# fpr = dict()
+		# tpr = dict()
+		# roc_auc = dict()
+		# for i in range(n_classes):
+		# 	fpr[i], tpr[i], _ = roc_curve(Y[:, i], scores_y[:, i])
+		# 	roc_auc[i] = auc(fpr[i], tpr[i])
+
+		# fpr["micro"], tpr["micro"], _ = roc_curve(Y.ravel(), scores_y.ravel())
+		# roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
 		submission_results['real'] = submission_results[['real']].applymap(lambda x: str(x))
 		submission_results['predito'] = submission_results[['predito']].applymap(lambda x: str(x))
@@ -142,6 +145,6 @@ class RNA():
 						'f1_score': f1,
 						'confusion_matrix': matrix,
 						'precision': precision,
-						'auc': roc_auc["micro"]}
+						'auc': auc}
 
 		return dict_result

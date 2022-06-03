@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 def train():
     methods = ['RGB'] 
 
-    model_base = 'xception'
+    model_base = 'xception_3_channels.h5'
 
     df = pd.read_csv('aerial-cactus-identification/train.csv')
 
@@ -34,13 +34,13 @@ def train():
     			    	  method = method,
     			    	  model_base = model_base,
     			    	  batch_size=32,
-    			    	  epochs=1000)
+    			    	  epochs=10)
 
         model_json = model.to_json()
         with open('modelo_3_bandas.json', "w") as json_file:
         	json_file.write(model_json)
 
-        model.save('modelo_3_bandas.h5'.format(model_base, method))
+        model.save('modelo_6_bandas.h5')
         print("Saved model to disk")
 
 
